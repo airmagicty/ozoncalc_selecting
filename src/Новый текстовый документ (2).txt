@@ -1,0 +1,176 @@
+// Основные функции работы с калькулятором
+function getInputPrice() {
+  const labels = document.querySelectorAll('label');
+  let targetLabel;
+  
+  for (const label of labels) {
+    if (label.textContent.trim() === 'Цена, ₽') {
+      targetLabel = label;
+      break;
+    }
+  }
+
+  if (targetLabel) {
+    const inputId = targetLabel.getAttribute('for');
+    const input = document.getElementById(inputId);
+    
+    if (input) {
+      console.log('Найденный input:', input);
+      return input;
+    } else {
+      console.log('Input с id', inputId, 'не найден');
+      return false;
+    }
+  } else {
+    console.log('Label с текстом "Цена, ₽" не найден');
+    return false;
+  }
+}
+
+function editInputPrice(inputPrice, newPrice) {
+  const input = inputPrice;
+  
+  if (input) {
+    input.focus();
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  
+    input.value = `${newPrice}`;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  
+    console.log('Значение успешно изменено:', input);
+  } else {
+    console.error('Инпут не найден');
+  }
+}  
+
+function clickButtonNewPrice() {
+  const button = document.querySelector('button.ozi__button__button__TAOtz.ozi__button__size-600__TAOtz.ozi-body-600-true.ozi__button__primary__TAOtz.ozi__button__hug__TAOtz.ozi__button__light__TAOtz._recalculateButton_10hlc_48');
+  
+  if (button) {
+    const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
+    const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, view: window });
+    const clickEvent = new MouseEvent('click', { bubbles: true, view: window });
+  
+    button.dispatchEvent(mouseDownEvent);
+    button.dispatchEvent(mouseUpEvent);
+    button.dispatchEvent(clickEvent);
+    button.click();
+    
+    console.log('Клик успешно эмулирован', button);
+    return true;
+  } else {
+    console.error('Кнопка не найдена');
+    return false;
+  }
+}
+
+function getPriceFromTable() {
+  const elements = document.querySelectorAll('.ozi-table-400');
+  const lastElement = elements[elements.length - 1];
+  
+  if (lastElement) {
+    const container = lastElement.closest('div[class*="container"]') || lastElement.parentElement;
+    
+    const priceDiv = Array.from(container.querySelectorAll('div'))
+      .find(div => /\d/.test(div.textContent) && div.textContent.includes('₽'));
+    
+    if (priceDiv) {
+      const number = parseInt(
+        priceDiv.textContent
+          .replace(/\s/g, '')
+          .replace(/−/g, '-')
+          .replace(/[^-\d]/g, ''),
+        10
+      );
+      
+      console.log('Распаршенное число:', number);
+      return number;
+    }
+  }
+  return false;
+}
+
+// Создаем интерфейс
+const controlDiv = document.createElement('div');
+controlDiv.style.position = 'fixed';
+controlDiv.style.top = '10px';
+controlDiv.style.left = '10px';
+controlDiv.style.zIndex = '9999';
+controlDiv.style.backgroundColor = 'white';
+controlDiv.style.padding = '10px';
+controlDiv.style.border = '1px solid #ccc';
+controlDiv.style.borderRadius = '5px';
+
+const targetPriceInput = document.createElement('input');
+targetPriceInput.type = 'number';
+targetPriceInput.placeholder = 'Цель';
+targetPriceInput.style.marginRight = '5px';
+
+const calculateButton = document.createElement('button');
+calculateButton.textContent = 'Рассчитать';
+calculateButton.style.marginRight = '5px';
+
+const statusLabel = document.createElement('span');
+statusLabel.textContent = 'Готово';
+
+controlDiv.appendChild(targetPriceInput);
+controlDiv.appendChild(calculateButton);
+controlDiv.appendChild(statusLabel);
+document.body.appendChild(controlDiv);
+
+// Функция для преобразования строки с пробелами в число
+function parseNumberWithSpaces(str) {
+    return parseFloat(str.replace(/\s+/g, ''));
+}
+
+// Обработчик кнопки
+calculateButton.addEventListener('click', async () => {
+    try {
+        statusLabel.textContent = 'Выполняется...';
+        
+        // Получаем текущие значения
+        const inputPriceElement = getInputPrice();
+        const currentPrice = parseNumberWithSpaces(inputPriceElement.value);
+        const targetPrice = parseFloat(targetPriceInput.value);
+        
+        if (isNaN(targetPrice)) {
+            statusLabel.textContent = 'Ошибка: введите число';
+            return;
+        }
+        
+        // Ждем перед расчетами
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Получаем текущий расчет
+        const currentCalculatedPrice = getPriceFromTable();
+        
+        // Вычисляем коэффициент
+        const ratio = targetPrice / currentCalculatedPrice;
+        const newPrice = Math.round(currentPrice * ratio);
+        
+        // Устанавливаем новую цену
+        editInputPrice(inputPriceElement, newPrice);
+        
+        // Ждем перед кликом
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Нажимаем кнопку перерасчета
+        clickButtonNewPrice();
+        
+        // Ждем завершения расчетов
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Получаем финальный результат
+        const finalPrice = getPriceFromTable();
+        const difference = Math.abs(finalPrice - targetPrice);
+        
+        statusLabel.textContent = `Разница: ${difference.toFixed(2)}`;
+        
+    } catch (error) {
+        statusLabel.textContent = 'Ошибка: ' + error.message;
+        console.error(error);
+    }
+});
