@@ -1,16 +1,15 @@
 // Author: airmagicty
 // Name: Подбрщик для OZON-Калькулятора 
-// Version: 0.1 Release
+// Version: 1.0 Release
 // URL паттерн: https://calculator.ozon.ru/
 // chrome-extension: User JavaScript and CSS 3.0.6
 // Settings: Изолированая среда (не обязательно)
 
+// Основные функции работы с калькулятором
 function getInputPrice() {
-  // Находим все элементы label
   const labels = document.querySelectorAll('label');
-
-  // Перебираем их и ищем нужный текст
   let targetLabel;
+  
   for (const label of labels) {
     if (label.textContent.trim() === 'Цена, ₽') {
       targetLabel = label;
@@ -18,11 +17,8 @@ function getInputPrice() {
     }
   }
 
-  // Если label найден, получаем его атрибут for
   if (targetLabel) {
     const inputId = targetLabel.getAttribute('for');
-    
-    // Находим input по id
     const input = document.getElementById(inputId);
     
     if (input) {
@@ -39,73 +35,44 @@ function getInputPrice() {
 }
 
 function editInputPrice(inputPrice, newPrice) {
-  // 1. Находим инпут по ID
-  // const input = document.getElementById(elementID);
   const input = inputPrice;
   
   if (input) {
-    // 2. Эмулируем фокус на инпуте
     input.focus();
-  
-    // 3. Удаляем текущее значение с эмуляцией событий
-    input.value = ''; // Очищаем значение
-    input.dispatchEvent(new Event('input', { bubbles: true })); // Триггерим событие ввода
-    input.dispatchEvent(new Event('change', { bubbles: true })); // Триггерим событие изменения
-  
-    // 4. Устанавливаем новое значение
-    input.value = `${newPrice}`;
-  
-    // 5. Эмулируем ввод нового значения
+    input.value = '';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
   
-    console.log('Значение успешно изменено на 100:', input);
+    input.value = `${newPrice}`;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  
+    console.log('Значение успешно изменено:', input);
   } else {
     console.error('Инпут не найден');
   }
 }  
 
-
-
 function clickButtonNewPrice() {
-  // Находим кнопку по селектору
   const button = document.querySelector('button.ozi__button__button__TAOtz.ozi__button__size-600__TAOtz.ozi-body-600-true.ozi__button__primary__TAOtz.ozi__button__hug__TAOtz.ozi__button__light__TAOtz._recalculateButton_10hlc_48');
   
   if (button) {
-    // Создаем события для полной эмуляции
-    const mouseDownEvent = new MouseEvent('mousedown', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    });
-    
-    const mouseUpEvent = new MouseEvent('mouseup', {
-      bubbles: true,
-      view: window
-    });
-    
-    const clickEvent = new MouseEvent('click', {
-      bubbles: true,
-      view: window
-    });
+    const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
+    const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, view: window });
+    const clickEvent = new MouseEvent('click', { bubbles: true, view: window });
   
-    // Запускаем цепочку событий
     button.dispatchEvent(mouseDownEvent);
     button.dispatchEvent(mouseUpEvent);
     button.dispatchEvent(clickEvent);
-    
-    // Дополнительно триггерим стандартный click
     button.click();
     
     console.log('Клик успешно эмулирован', button);
     return true;
   } else {
     console.error('Кнопка не найдена');
-  	return false;
+    return false;
   }
 }
-
-
 
 function getPriceFromTable() {
   const elements = document.querySelectorAll('.ozi-table-400');
@@ -114,15 +81,14 @@ function getPriceFromTable() {
   if (lastElement) {
     const container = lastElement.closest('div[class*="container"]') || lastElement.parentElement;
     
-    // Ищем div с числом и валютой
     const priceDiv = Array.from(container.querySelectorAll('div'))
       .find(div => /\d/.test(div.textContent) && div.textContent.includes('₽'));
     
     if (priceDiv) {
       const number = parseInt(
         priceDiv.textContent
-          .replace(/\s/g, '') // Убираем все пробелы
-          .replace(/−/g, '-') // корректируем минус
+          .replace(/\s/g, '')
+          .replace(/−/g, '-')
           .replace(/[^-\d]/g, ''),
         10
       );
@@ -131,142 +97,87 @@ function getPriceFromTable() {
       return number;
     }
   }
-	return false;
+  return false;
 }
 
-
-// Добавляем элементы интерфейса
-const interfaceContainer = document.createElement('div');
-interfaceContainer.style.cssText = `
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: white;
-    padding: 10px;
-    border: 1px solid #ccc;
-    z-index: 9999;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-`;
+// Создаем интерфейс
+const controlDiv = document.createElement('div');
+controlDiv.style.position = 'fixed';
+controlDiv.style.top = '10px';
+controlDiv.style.left = '10px';
+controlDiv.style.zIndex = '9999';
+controlDiv.style.backgroundColor = 'white';
+controlDiv.style.padding = '10px';
+controlDiv.style.border = '1px solid #ccc';
+controlDiv.style.borderRadius = '5px';
 
 const targetPriceInput = document.createElement('input');
 targetPriceInput.type = 'number';
-targetPriceInput.placeholder = 'Целевая цена, ₽';
-targetPriceInput.style.marginBottom = '5px';
+targetPriceInput.placeholder = 'Цель';
+targetPriceInput.style.marginRight = '5px';
 
 const calculateButton = document.createElement('button');
 calculateButton.textContent = 'Рассчитать';
-calculateButton.style.cssText = `
-    display: block;
-    margin-bottom: 5px;
-    padding: 5px 10px;
-`;
+calculateButton.style.marginRight = '5px';
 
-const statusDiv = document.createElement('div');
-statusDiv.id = 'statusDiv';
-statusDiv.style.cssText = `
-    max-width: 300px;
-    word-wrap: break-word;
-    font-size: 14px;
-`;
+const statusLabel = document.createElement('span');
+statusLabel.textContent = 'Готово';
 
-interfaceContainer.appendChild(targetPriceInput);
-interfaceContainer.appendChild(calculateButton);
-interfaceContainer.appendChild(statusDiv);
-document.body.appendChild(interfaceContainer);
+controlDiv.appendChild(targetPriceInput);
+controlDiv.appendChild(calculateButton);
+controlDiv.appendChild(statusLabel);
+document.body.appendChild(controlDiv);
 
-// Логика подбора цены
+// Функция для преобразования строки с пробелами в число
+function parseNumberWithSpaces(str) {
+    return parseFloat(str.replace(/\s+/g, ''));
+}
+
+// Обработчик кнопки
 calculateButton.addEventListener('click', async () => {
-    const target = parseInt(targetPriceInput.value);
-    if (isNaN(target)) {
-        statusDiv.textContent = 'Введите корректную целевую цену';
-        return;
-    }
-
-    const inputEl = getInputPrice();
-    if (!inputEl) {
-        statusDiv.textContent = 'Ошибка: Инпут цены не найден';
-        return;
-    }
-
-    let currentPrice = parseInt(inputEl.value) || 0;
-    let bestPrice = currentPrice;
-    let bestDiff = Infinity;
-    let iterations = 0;
-    let step = 100;
-    let direction = null;
-
-    const updateStatus = (message) => {
-        statusDiv.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
-    };
-
-    const getCurrentResult = async (price) => {
-        editInputPrice(inputEl, price);
+    try {
+        statusLabel.textContent = 'Выполняется...';
+        
+        // Получаем текущие значения
+        const inputPriceElement = getInputPrice();
+        const currentPrice = parseNumberWithSpaces(inputPriceElement.value);
+        const targetPrice = parseFloat(targetPriceInput.value);
+        
+        if (isNaN(targetPrice)) {
+            statusLabel.textContent = 'Ошибка: введите число';
+            return;
+        }
+        
+        // Ждем перед расчетами
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Получаем текущий расчет
+        const currentCalculatedPrice = getPriceFromTable();
+        
+        // Вычисляем коэффициент
+        const ratio = targetPrice / currentCalculatedPrice;
+        const newPrice = Math.round(currentPrice * ratio);
+        
+        // Устанавливаем новую цену
+        editInputPrice(inputPriceElement, newPrice);
+        
+        // Ждем перед кликом
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Нажимаем кнопку перерасчета
         clickButtonNewPrice();
-        await new Promise(r => setTimeout(r, 500));
-        return getPriceFromTable() || 0;
-    };
-
-    // Первоначальный результат
-    let currentResult = await getCurrentResult(currentPrice);
-    updateStatus(`Старт: ${currentPrice} → ${currentResult} (Цель: ${target})`);
-
-    // Проверка начального состояния
-    if (Math.abs(currentResult - target) <= 50) {
-        updateStatus(`Уже в допустимом диапазоне: ${currentResult}`);
-        return;
-    }
-
-    // Определение направления поиска
-    direction = currentResult < target ? 'up' : 'down';
-    updateStatus(`Начинаем поиск в направлении: ${direction}`);
-
-    // Экспоненциальный поиск границ
-    while (iterations < 10 && Math.abs(currentResult - target) > 50) {
-        iterations++;
-        const prevPrice = currentPrice;
-        currentPrice += direction === 'up' ? step : -step;
         
-        currentResult = await getCurrentResult(currentPrice);
-        updateStatus(`Шаг ${iterations}: ${prevPrice} → ${currentPrice} → ${currentResult}`);
-
-        // Проверка пересечения цели
-        if ((direction === 'up' && currentResult >= target) || 
-            (direction === 'down' && currentResult <= target)) {
-            break;
-        }
-
-        step *= 2;
-    }
-
-    // Бинарный поиск в найденном диапазоне
-    let low = direction === 'up' ? currentPrice - step : currentPrice;
-    let high = direction === 'up' ? currentPrice : currentPrice + step;
-    updateStatus(`Уточнение в диапазоне: ${low} - ${high}`);
-
-    while (iterations < 20 && low <= high) {
-        iterations++;
-        const mid = Math.round((low + high) / 2);
-        currentResult = await getCurrentResult(mid);
+        // Ждем завершения расчетов
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Обновление лучшего результата
-        const currentDiff = Math.abs(currentResult - target);
-        if (currentDiff < bestDiff) {
-            bestDiff = currentDiff;
-            bestPrice = mid;
-        }
-
-        updateStatus(`Точная настройка: ${mid} → ${currentResult} (Осталось итераций: ${20 - iterations})`);
-
-        if (currentDiff <= 50) break;
-        if (currentResult < target) low = mid + 1;
-        else high = mid - 1;
-    }
-
-    // Финализация результатов
-    currentResult = await getCurrentResult(bestPrice);
-    if (Math.abs(currentResult - target) <= 50) {
-        updateStatus(`Успех: ${bestPrice} → ${currentResult} (Разница: ${currentResult - target})`);
-    } else {
-        updateStatus(`Лучший результат: ${bestPrice} → ${currentResult} (Отклонение: ${currentResult - target})`);
+        // Получаем финальный результат
+        const finalPrice = getPriceFromTable();
+        const difference = Math.abs(finalPrice - targetPrice);
+        
+        statusLabel.textContent = `Разница: ${difference.toFixed(2)}`;
+        
+    } catch (error) {
+        statusLabel.textContent = 'Ошибка: ' + error.message;
+        console.error(error);
     }
 });
